@@ -3,13 +3,22 @@
 Testing endpoint API for Gaia video lookup
 
 setup:
+
 (install npm on your system)
+
 npm install pm2 -g
+
 npm i
 
 run with:
-pm2 start server.js
-pm2 restart server.js
+
+pm2 start server.coffee
+
+pm2 restart server.coffee
+
+pm2 logs
+
+pm2 kill
 
 test via:
 
