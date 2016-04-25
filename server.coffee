@@ -26,12 +26,10 @@ mediaParse = (xml) ->
 
 # promisified request wrapper, returns result of parsing a result from a URL
 requestWrapper = (url, parseFn) ->
-  #console.log('saw url ' + url)
   request(
     uri: url
     resolveWithFullResponse: true
   ).then((response) ->
-    #console.log("saw response " + JSON.stringify(response))
     if response.statusCode == 200
       parsed = ''
       parse(response.body, { trim: true }, (err, result) ->
@@ -64,7 +62,6 @@ requestWrapper = (url, parseFn) ->
 
 # router handler that watches at our pre-specified path on port 4000
 app.get '/v1/api/term/:id/longest-preview-media-url', (req, res) ->
-  #console.log 'server saw input ID param : ' + req.params.id + '\n'
   if isNaN(req.params.id) # basic fuzz defense
     res.sendstatus(400).send error: 'Please supply a numeric id parameter.'
   else
@@ -72,18 +69,18 @@ app.get '/v1/api/term/:id/longest-preview-media-url', (req, res) ->
     requestWrapper(vocabURL+req.params.id,vocabParse)
     .then((result) ->
       if result.error
-        res.send result
+        res.sendStatus(result.error).send error: result2.message
       else
         requestWrapper(videosURL+result,videoParse)
     ).then((result1) ->
       if result1.error
-        res.send result1
+        res.sendStatus(result1.error).send error: result2.message
       else
         resultFull = result1
         requestWrapper(mediaURL+result1.preview.nid,mediaParse)
     ).then((result2) ->
       if result2.error
-        res.send result2
+        res.sendStatus(result2.error).send error: result2.message
       else
         res.send
           bcHLS: result2
@@ -91,7 +88,7 @@ app.get '/v1/api/term/:id/longest-preview-media-url', (req, res) ->
           previewNid: resultFull.preview.nid
           previewDuration: resultFull.preview.duration
     ).catch((err) ->
-      res.send 'unexpected err : ' + JSON.stringify(err)
+      res.sendStatus(500).send error: 'unexpected err : ' + JSON.stringify(err)
     )
 
 app.listen 4000
