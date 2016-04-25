@@ -1,0 +1,17 @@
+{
+  "name": "gaia_testing",
+  "version": "0.0.0",
+  "description": "Testing endpoint API for Gaia video lookup",
+  "main": "server.js",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:Tectract/gaia_testing"
+  },
+  "author": "Ryan Molecke",
+  "dependencies": {
+    "express": "~4.13.4",
+    "lodash": "~4.11.1",
+    "request-promise": "~3.0.0",
+    "xml2js": "~0.4.16"
+  }
+}
