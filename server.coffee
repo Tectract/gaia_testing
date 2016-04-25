@@ -2,7 +2,7 @@ _ = require('lodash')
 express = require('express')
 app = express()
 request = require('request-promise') # request, properly promisified via bluebird
-parse = require('xml2js').parseString;
+parse = require('xml2js').parseString; # could be promisified with bluebird
 
 # at the top are URLs and XML / logical parser operations
 vocabURL = 'http://www.gaia.com/api/vocabulary/1/'
@@ -20,21 +20,9 @@ videoParse = (xml) ->
     if element && element.preview
       -1*element.preview.duration
   )
-
 mediaURL = 'http://www.gaia.com/api/media/'
 mediaParse = (xml) ->
   xml.response.mediaUrls[0]['$'].bcHLS
-
-# generic parse or return nicely formatted error here
-safeParse = (parseFn,xml) ->
-  #console.log('parsing xml now: ' + JSON.stringify(xml))
-  try
-    parseFn xml
-  catch err
-    {
-      error: 500
-      massage: ' endpoint unexpected xml response ' + JSON.stringify(err)
-    }
 
 # promisified request wrapper, returns result of parsing a result from a URL
 requestWrapper = (url, parseFn) ->
@@ -53,8 +41,14 @@ requestWrapper = (url, parseFn) ->
             message: ' endpoint xml response couldn\'t be parsed ' + JSON.stringify(err)
           }
         else
-          parsed = parseFn result
-        return
+          try
+            parsed = parseFn result
+          catch err
+            parsed =
+            {
+              error: 500
+              message: ' xml parse error : ' + JSON.stringify(err)
+            }
       )
       parsed
     else
@@ -77,16 +71,25 @@ app.get '/v1/api/term/:id/longest-preview-media-url', (req, res) ->
     resultFull = {}
     requestWrapper(vocabURL+req.params.id,vocabParse)
     .then((result) ->
-      requestWrapper(videosURL+result,videoParse)
+      if result.error
+        res.send result
+      else
+        requestWrapper(videosURL+result,videoParse)
     ).then((result1) ->
-      resultFull = result1
-      requestWrapper(mediaURL+result1.preview.nid,mediaParse)
+      if result1.error
+        res.send result1
+      else
+        resultFull = result1
+        requestWrapper(mediaURL+result1.preview.nid,mediaParse)
     ).then((result2) ->
-      res.send
-        bcHLS: result2
-        titleNid: resultFull.titleNID
-        previewNid: resultFull.preview.nid
-        previewDuration: resultFull.preview.duration
+      if result2.error
+        res.send result2
+      else
+        res.send
+          bcHLS: result2
+          titleNid: resultFull.titleNID
+          previewNid: resultFull.preview.nid
+          previewDuration: resultFull.preview.duration
     ).catch((err) ->
       res.send 'unexpected err : ' + JSON.stringify(err)
     )
