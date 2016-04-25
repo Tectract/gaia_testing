@@ -1,4 +1,3 @@
 node_modules/
-/NodeJsApplication/nbproject/private/
-/nbproject/private/
+/nbproject
 /bin
